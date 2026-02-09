@@ -100,7 +100,7 @@ const Index = () => {
               variant="hero"
               size="xl"
               className="group"
-              onClick={() => navigate("/portfolio")}
+              onClick={() => navigate("/home")}
             >
               Conhecer mais
               <ArrowRight className="transition-transform group-hover:translate-x-1" />
