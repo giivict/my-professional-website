@@ -33,8 +33,10 @@ import {
   Smartphone,
   Server,
   Cog,
+  Paperclip,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -216,24 +218,26 @@ const Portfolio = () => {
   };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // TODO: Substitua SEU_FORM_ID pelo ID do seu formulário do Formspree
   const FORMSPREE_ID = "meelonzv";
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
+      const formData = new globalThis.FormData();
+      formData.append("nome", data.nome);
+      formData.append("contato", data.contato);
+      formData.append("tipo", data.tipo);
+      formData.append("mensagem", data.mensagem);
+      if (attachment) {
+        formData.append("attachment", attachment);
+      }
+
       const response = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          nome: data.nome,
-          contato: data.contato,
-          tipo: data.tipo,
-          mensagem: data.mensagem,
-        }),
+        body: formData,
       });
 
       if (response.ok) {
@@ -242,6 +246,7 @@ const Portfolio = () => {
           description: "Entrarei em contato em breve. Obrigada!",
         });
         form.reset();
+        setAttachment(null);
       } else {
         throw new Error("Erro ao enviar");
       }
@@ -660,6 +665,63 @@ const Portfolio = () => {
                     </FormItem>
                   )}
                 />
+
+                {/* Anexo */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none">
+                    Anexo (opcional)
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file && file.size <= 10 * 1024 * 1024) {
+                          setAttachment(file);
+                        } else if (file) {
+                          toast({
+                            title: "Arquivo muito grande",
+                            description: "O tamanho máximo é 10MB.",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="gap-2"
+                    >
+                      <Paperclip className="h-4 w-4" />
+                      {attachment ? "Trocar arquivo" : "Anexar arquivo"}
+                    </Button>
+                    {attachment && (
+                      <div className="flex items-center gap-2 rounded-md border border-border/50 bg-secondary/50 px-3 py-1.5 text-sm text-foreground">
+                        <span className="max-w-[200px] truncate">
+                          {attachment.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAttachment(null);
+                            if (fileInputRef.current)
+                              fileInputRef.current.value = "";
+                          }}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    PDF, DOC, PNG, JPG ou ZIP — máx. 10MB
+                  </p>
+                </div>
 
                 <Button
                   type="submit"
